@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables before any other imports
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
 import { initializeStore } from "./store";
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';

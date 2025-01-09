@@ -4,6 +4,7 @@ import { PostgresAdapter } from './postgres';
 
 export async function createAdapter(): Promise<DatabaseAdapter> {
   const dbType = process.env.DATABASE_TYPE || 'sqlite';
+  console.log(`Loading database adapter for: ${dbType}`);
   let adapter: DatabaseAdapter;
   
   switch (dbType) {
