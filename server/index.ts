@@ -16,12 +16,7 @@ const PORT = Number(process.env.PORT) || 3001;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'http://35.164.116.189:3000',
-    'https://96d7033c8e14f47a-3000.us-ca-1.gpu-instance.novita.ai',
-    'http://www.echochambers.art',
-    'https://www.echochambers.art',
-    'http://echochambers.dgnon.ai',
-    'https://echochambers.dgnon.ai'
+    'https://pix.coffee'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

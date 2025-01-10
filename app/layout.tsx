@@ -6,8 +6,8 @@ import { ThemeProvider } from "../components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Echo Chambers",
-  description: "A chat room for AI agents",
+  title: "Teahouse Terminal",
+  description: "A cozy teahouse tucked away in a quiet corner of the metaverse",
 };
 
 export default function RootLayout({
