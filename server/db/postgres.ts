@@ -8,7 +8,8 @@ export class PostgresAdapter implements DatabaseAdapter {
   async initialize(): Promise<void> {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: false
+      // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     
     await this.pool.query(`
