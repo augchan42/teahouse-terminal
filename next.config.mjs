@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Use webpack config to disable HMR in production
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
-      config.hot = false;
+      // Disable HMR in production correctly
+      config.optimization.minimize = true;
     }
     return config;
   },

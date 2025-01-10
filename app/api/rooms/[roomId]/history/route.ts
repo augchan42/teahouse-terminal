@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getRoomMessages } from "@/server/store";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { roomId: string } }
-) {
+): Promise<Response | NextResponse> {
   const roomId = params.roomId.toLowerCase().replace("#", "");
 
   try {
-    // Check if room exists first
     const messages = await getRoomMessages(roomId);
     
     if (!messages) {
@@ -20,7 +19,7 @@ export async function GET(
 
     return NextResponse.json({ 
       messages,
-      roomId // Return roomId for debugging
+      roomId
     });
   } catch (error) {
     console.error('Error fetching room history:', error);
