@@ -4,10 +4,12 @@
   "private": true,
   "description": "A cozy digital teahouse tucked away in a quiet corner of the metaverse. Paper lanterns cast a warm glow on vintage terminals where wanderers commune with mysterious entities about the I-Ching, reality, and the patterns hidden in plain sight. The kind of place where ancient wisdom meets retro tech, and every conversation might unlock a new understanding of the universe.",
   "scripts": {
-    "dev": "concurrently \"next dev\" \"ts-node --project tsconfig.server.json server/index.ts\"",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "cross-env NODE_ENV=development DATABASE_TYPE=postgres tsx scripts/migrate.ts",
+    "migrate:sqlite": "cross-env NODE_ENV=development DATABASE_TYPE=sqlite tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -79,12 +81,14 @@
     "@types/sqlite3": "^3.1.11",
     "autoprefixer": "^10.0.1",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.3.5",
+    "tsx": "^4.0.0",
     "typescript": "^5"
   }
 }

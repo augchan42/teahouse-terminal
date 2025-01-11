@@ -5,11 +5,14 @@ import { ChatRoom, ChatMessage, ModelInfo } from '../types';
 export class PostgresAdapter implements DatabaseAdapter {
   private pool: Pool | null = null;
   
+  getDatabase() {
+    return this.pool!;
+  }
+  
   async initialize(): Promise<void> {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: false
-      // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     
     await this.pool.query(`
@@ -47,15 +50,16 @@ export class PostgresAdapter implements DatabaseAdapter {
       
       const id = room.name.toLowerCase().replace('#', '') || crypto.randomUUID();
       await client.query(
-        `INSERT INTO rooms (id, name, topic, tags, created_at, message_count)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO rooms (id, name, topic, tags, created_at, message_count, display_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           id,
           room.name,
           room.topic,
           JSON.stringify(room.tags),
           new Date().toISOString(),
-          0
+          0,
+          room.displayOrder || 0
         ]
       );
       
@@ -104,7 +108,8 @@ export class PostgresAdapter implements DatabaseAdapter {
       tags: room.tags,
       participants: room.participants.filter((p: any) => p.username),
       createdAt: room.created_at,
-      messageCount: room.message_count
+      messageCount: room.message_count,
+      displayOrder: room.display_order
     };
   }
   
@@ -128,6 +133,11 @@ export class PostgresAdapter implements DatabaseAdapter {
       values.push(JSON.stringify(room.tags));
       paramCount++;
     }
+    if (typeof room.displayOrder === 'number') {
+      updates.push(`display_order = $${paramCount}`);
+      values.push(room.displayOrder);
+      paramCount++;
+    }
     
     if (updates.length > 0) {
       await this.pool!.query(
@@ -146,6 +156,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       FROM rooms r
       LEFT JOIN participants p ON r.id = p.room_id
       GROUP BY r.id
+      ORDER BY r.display_order ASC
     `;
     
     if (tags?.length) {
@@ -264,7 +275,8 @@ export class PostgresAdapter implements DatabaseAdapter {
       tags: row.tags,
       participants: row.participants.filter((p: any) => p.username),
       createdAt: row.created_at,
-      messageCount: row.message_count
+      messageCount: row.message_count,
+      displayOrder: row.display_order  // Add this line
     }));
   }
 

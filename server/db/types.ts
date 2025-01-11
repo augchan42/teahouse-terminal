@@ -1,4 +1,6 @@
 import { ChatRoom, ChatMessage, ModelInfo } from '../types';
+import { Database } from 'sqlite';
+import { Pool } from 'pg';
 
 export interface DatabaseAdapter {
   // Room operations
@@ -15,6 +17,9 @@ export interface DatabaseAdapter {
   // Participant operations
   addParticipant(roomId: string, participant: ModelInfo): Promise<void>;
   removeParticipant(roomId: string, username: string): Promise<void>;
+  
+  // Add this method
+  getDatabase(): Database | Pool;
   
   // Initialize/cleanup
   initialize(): Promise<void>;

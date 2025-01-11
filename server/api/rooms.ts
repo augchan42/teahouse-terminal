@@ -51,7 +51,7 @@ router.post('/:roomId/message', async (req: Request, res: Response) => {
 // Create room
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, topic, tags, creator } = req.body;
+    const { name, topic, tags, creator, displayOrder } = req.body;
     
     const room = await createRoom({
       name,
@@ -59,7 +59,8 @@ router.post('/', async (req: Request, res: Response) => {
       tags,
       participants: [creator],
       createdAt: new Date().toISOString(),
-      messageCount: 0
+      messageCount: 0,
+      displayOrder
     });
     
     res.json({ room });

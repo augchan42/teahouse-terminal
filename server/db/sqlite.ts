@@ -8,8 +8,12 @@ import { runMigrations } from './migrations';
 export class SQLiteAdapter implements DatabaseAdapter {
   private db: Database | null = null;
   
+  getDatabase() {
+    return this.db!;
+  }
+  
   async initialize(): Promise<void> {
-    const dbPath = path.resolve(process.cwd(), process.env.SQLITE_DB_PATH || 'chat.db');
+    const dbPath = process.env.SQLITE_PATH || 'chat.db';
     console.log('Initializing SQLite database at:', dbPath);
     
     this.db = await open({
@@ -17,26 +21,53 @@ export class SQLiteAdapter implements DatabaseAdapter {
       driver: sqlite3.Database
     });
 
-    // Run migrations
-    await runMigrations(this.db);
-    
-    console.log('Database migrations completed successfully');
+    await this.db.exec(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        topic TEXT,
+        tags TEXT,
+        created_at TEXT,
+        message_count INTEGER DEFAULT 0
+      );
+      
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        room_id TEXT REFERENCES rooms(id),
+        content TEXT,
+        sender_username TEXT,
+        sender_model TEXT,
+        timestamp TEXT
+      );
+      
+      CREATE TABLE IF NOT EXISTS participants (
+        room_id TEXT REFERENCES rooms(id),
+        username TEXT,
+        model TEXT,
+        PRIMARY KEY(room_id, username)
+      );
+    `);
   }
   
   async createRoom(room: Omit<ChatRoom, 'id'>): Promise<ChatRoom> {
     const id = room.name.toLowerCase().replace('#', '') || crypto.randomUUID();
+    console.log(`SQLite creating room ${room.name} with display_order:`, room.displayOrder);
+    
     await this.db!.run(
-      `INSERT INTO rooms (id, name, topic, tags, created_at, message_count)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO rooms (id, name, topic, tags, created_at, message_count, display_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       id,
       room.name,
       room.topic,
       JSON.stringify(room.tags),
       new Date().toISOString(),
-      0
+      0,
+      room.displayOrder || 0
     );
     
-    return this.getRoom(id) as Promise<ChatRoom>;
+    const createdRoom = await this.getRoom(id);
+    console.log(`SQLite created room ${room.name}, fetched with display_order:`, createdRoom?.displayOrder);
+    return createdRoom as ChatRoom;
   }
   
   async getRoom(roomId: string): Promise<ChatRoom | null> {
@@ -59,7 +90,8 @@ export class SQLiteAdapter implements DatabaseAdapter {
       tags: JSON.parse(room.tags),
       participants: JSON.parse(room.participants).filter((p: any) => p.username),
       createdAt: room.created_at,
-      messageCount: room.message_count
+      messageCount: room.message_count,
+      displayOrder: room.display_order
     };
   }
 
@@ -69,7 +101,8 @@ export class SQLiteAdapter implements DatabaseAdapter {
         json_group_array(json_object('username', p.username, 'model', p.model)) as participants
        FROM rooms r
        LEFT JOIN participants p ON r.id = p.room_id
-       GROUP BY r.id`
+       GROUP BY r.id
+       ORDER BY r.display_order ASC`  // Add this ORDER BY
     );
     
     return rooms.map((room: any) => ({
@@ -79,7 +112,8 @@ export class SQLiteAdapter implements DatabaseAdapter {
       tags: JSON.parse(room.tags),
       participants: JSON.parse(room.participants).filter((p: any) => p.username),
       createdAt: room.created_at,
-      messageCount: room.message_count
+      messageCount: room.message_count,
+      displayOrder: room.display_order  // Add this
     })).filter((room: ChatRoom) => 
       !tags?.length || tags.some(tag => room.tags.includes(tag))
     );
@@ -149,22 +183,22 @@ export class SQLiteAdapter implements DatabaseAdapter {
   async updateRoom(roomId: string, room: Partial<ChatRoom>): Promise<ChatRoom> {
     const updates: string[] = [];
     const values: any[] = [roomId];
-    let paramCount = 2;
     
     if (room.name) {
       updates.push(`name = ?`);
       values.push(room.name);
-      paramCount++;
     }
     if (room.topic) {
       updates.push(`topic = ?`);
       values.push(room.topic);
-      paramCount++;
     }
     if (room.tags) {
       updates.push(`tags = ?`);
       values.push(JSON.stringify(room.tags));
-      paramCount++;
+    }
+    if (typeof room.displayOrder === 'number') {
+      updates.push(`display_order = ?`);
+      values.push(room.displayOrder);
     }
     
     if (updates.length > 0) {

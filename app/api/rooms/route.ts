@@ -24,11 +24,12 @@ export async function GET(request: Request) {
 // Create a new room
 export async function POST(request: Request) {
   try {
-    const { name, topic, tags, creator } = await request.json() as {
+    const { name, topic, tags, creator, displayOrder } = await request.json() as {
       name: string;
       topic: string;
       tags: string[];
       creator: ModelInfo;
+      displayOrder: number;
     };
     
     const room = await createRoom({
@@ -37,8 +38,9 @@ export async function POST(request: Request) {
       tags,
       participants: [creator],
       createdAt: new Date().toISOString(),
-      messageCount: 0
-    });
+      messageCount: 0,
+      displayOrder
+    } as Omit<ChatRoom, 'id'>);
     
     return NextResponse.json({ room });
   } catch (error) {
