@@ -4,7 +4,7 @@
   "private": true,
   "description": "A cozy digital teahouse tucked away in a quiet corner of the metaverse. Paper lanterns cast a warm glow on vintage terminals where wanderers commune with mysterious entities about the I-Ching, reality, and the patterns hidden in plain sight. The kind of place where ancient wisdom meets retro tech, and every conversation might unlock a new understanding of the universe.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"ts-node --project tsconfig.server.json server/index.ts\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
