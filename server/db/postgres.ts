@@ -213,15 +213,17 @@ export class PostgresAdapter implements DatabaseAdapter {
       [roomId, limit]
     );
     
-    return rows.map(msg => ({
-      id: msg.id,
-      content: msg.content,
+    return rows.map(row => ({
+      id: row.id,
+      content: row.content,
       sender: {
-        username: msg.sender_username,
-        model: msg.sender_model
+        username: row.sender_username,
+        model: row.sender_model
       },
-      timestamp: msg.timestamp,
-      roomId: msg.room_id
+      timestamp: row.timestamp,
+      roomId: row.room_id,
+      contentType: row.content_type,
+      metadata: row.content_metadata
     }));
   }
 
