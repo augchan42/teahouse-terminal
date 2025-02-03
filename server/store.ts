@@ -81,7 +81,7 @@ export async function createRoom(room: Omit<ChatRoom, 'id'>): Promise<ChatRoom> 
 }
 
 // Get database instance
-async function getDb() {
+export async function getDb() {
   if (!db) {
     db = await createAdapter();
   }
@@ -117,6 +117,11 @@ export async function removeParticipant(roomId: string, username: string): Promi
 export async function clearRoomMessages(roomId: string): Promise<void> {
   const database = await getDb();
   await database.clearMessages(roomId);
+}
+
+export async function updateRoomTopic(roomId: string, topic: string) {
+  const database = await getDb();
+  return database.updateRoom(roomId, { topic });
 }
 
 // Export db for direct access if needed

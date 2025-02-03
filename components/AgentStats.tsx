@@ -2,17 +2,20 @@
 import { useEffect, useState } from 'react';
 import { fetchAgents } from '@/server/actions';
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
-interface Tweet {
+
+export interface Tweet {
   tweetUrl: string;
   tweetAuthorDisplayName: string;
   smartEngagementPoints: number;
   impressionsCount: number;
 }
-interface Contract {
+
+export interface Contract {
   chain: number;
   contractAddress: string;
 }
-interface Agent {
+
+export interface Agent {
   agentName: string;
   contracts: Contract[];
   twitterUsernames: string[];
@@ -34,6 +37,7 @@ interface Agent {
   averageEngagementsCount: number;
   averageEngagementsCountDeltaPercent: number;
 }
+
 interface ApiResponse {
   ok: {
     data: Agent[];
@@ -42,6 +46,7 @@ interface ApiResponse {
     totalCount: number;
   };
 }
+
 function DeltaIndicator({ value }: { value: number }) {
   if (value === 0) return null;
   const isPositive = value > 0;

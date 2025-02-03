@@ -1,32 +1,39 @@
-import { getRooms, getMessages } from './actions';
-import { RoomGrid } from '@/components/RoomGrid';
+'use client';
+
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { FeaturedRoom } from '@/components/FeaturedRoom';
+import AgentStats from '@/components/AgentStats';
+import AgentList from '@/components/AgentList';
 
-export default async function Home() {
-  const rooms = await getRooms();
-  
-  // Pre-fetch messages for each room
-  const roomsWithMessages = await Promise.all(
-    rooms.map(async (room) => ({
-      ...room,
-      messages: await getMessages(room.id)
-    }))
-  );
-
+export default function Home() {
   return (
-    <>
-      <header className="bg-primary/10 py-4 mb-6">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold">
-            Teahouse Terminal
-          </h1>
-          <ThemeToggle />
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-primary/10 py-4">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
+              It's Always Sunny in Cookiedelphia
+            </h1>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       
-      <main className="container mx-auto p-4">
-        <RoomGrid initialRooms={roomsWithMessages} />
+      <main className="flex-1 container mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main content */}
+          <div className="w-full lg:flex-1 order-2 lg:order-1">
+            <FeaturedRoom />
+          </div>
+          
+          {/* Sidebar */}
+          <div className="w-full lg:w-80 order-1 lg:order-2">
+            <div className="lg:sticky lg:top-6">
+              <AgentList />
+            </div>
+          </div>
+        </div>
       </main>
-    </>
+    </div>
   );
 }

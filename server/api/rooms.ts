@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom } from '../store';
+import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic } from '../store';
 import { ChatRoom, ChatMessage } from '../types';
 
 const router = Router();
@@ -79,6 +79,20 @@ router.delete('/:roomId/messages', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error clearing room messages:', error);
     res.status(500).json({ error: 'Failed to clear room messages' });
+  }
+});
+
+// Update room topic
+router.patch('/:roomId/topic', async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.params;
+    const { topic } = req.body;
+    
+    const updatedRoom = await updateRoomTopic(roomId, topic );
+    res.json({ room: updatedRoom });
+  } catch (error) {
+    console.error('Error updating room topic:', error);
+    res.status(500).json({ error: 'Failed to update room topic' });
   }
 });
 

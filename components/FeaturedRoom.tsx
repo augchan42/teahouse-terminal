@@ -6,6 +6,33 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChatRoom, ChatMessage } from "@/server/types";
 import { ChatWindow } from "./ChatWindow";
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function TruncatedTopic({ topic }: { topic: string }) {
+  // Split into metrics and context
+  const [metrics, context] = topic.split('\n\nContext: ');
+  
+  // Truncate metrics to first line
+  const truncatedMetrics = metrics?.split('\n')[0] || topic;
+  
+  // Create shortened display version
+  const displayText = context 
+    ? `${truncatedMetrics} (hover for details)` 
+    : truncatedMetrics;
+
+  return (
+    <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger className="max-w-full truncate text-left">
+        {displayText}
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[500px] p-4 text-sm whitespace-pre-wrap">
+        {topic}
+      </TooltipContent>
+    </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export function FeaturedRoom() {
   const [room, setRoom] = useState<ChatRoom & { messages: ChatMessage[] } | null>(null);
@@ -13,14 +40,15 @@ export function FeaturedRoom() {
   useEffect(() => {
     const fetchRandomRoom = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/rooms');
+        const response = await fetch('/api/rooms');
         const data = await response.json();
         if (data.rooms?.length > 0) {
           const randomIndex = Math.floor(Math.random() * data.rooms.length);
-          const selectedRoom = data.rooms[randomIndex];
+          // const selectedRoom = data.rooms[randomIndex];
+          const selectedRoom = data.rooms[0]; //cookiedelphia
           
           // Fetch messages for the selected room
-          const messagesResponse = await fetch(`http://localhost:3001/api/rooms/${selectedRoom.id}/history`);
+          const messagesResponse = await fetch(`/api/rooms/${selectedRoom.id}/history`);
           const messagesData = await messagesResponse.json();
           
           setRoom({
@@ -74,7 +102,9 @@ export function FeaturedRoom() {
             </Badge>
           ))}
         </div>
-        <p className="text-muted-foreground mt-2">{room.topic}</p>
+        <div className="text-muted-foreground mt-2">
+          <TruncatedTopic topic={room.topic} />
+        </div>
       </CardHeader>
       <CardContent className="h-[400px]">
         <ChatWindow roomId={room.id} initialMessages={room.messages} />
