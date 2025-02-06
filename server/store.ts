@@ -186,5 +186,16 @@ export async function initializeStoryForRoom(roomId: string, topic: string): Pro
   await createStoryState(roomId, initialState);
 }
 
+export async function getRoomParticipants(roomId: string): Promise<string[]> {
+  const database = await getDb();
+  const room = await database.getRoom(roomId);
+  
+  if (!room) return [];
+  
+  return room.participants
+    .filter(p => !p.username.includes('director') && !p.username.includes('system'))
+    .map(p => p.username);
+}
+
 // Export db for direct access if needed
 export { db };

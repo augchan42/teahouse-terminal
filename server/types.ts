@@ -54,58 +54,6 @@ export interface ChatRoom {
   displayOrder: number;
 }
 
-// export enum StoryPhase {
-//   INTRO = 'intro',
-//   DEVELOPMENT = 'development',
-//   CLIMAX = 'climax',
-//   RESOLUTION = 'resolution'
-// }
-
-// export interface StoryState {
-//   currentPhase: StoryPhase;
-//   sceneStartTime: number;
-//   lastUpdate: number;
-//   discussedPoints: string[];  // prevent repetition
-//   characterParticipation: Record<string, {
-//       messageCount: number;
-//       lastMessageTime: number;
-//   }>;
-//   characterDynamics: Record<string, {
-//       role: string;
-//       currentGoal: string;
-//       plotPoints: string[];
-//   }>;
-//   topicFocus: string;
-//   plotProgression: {
-//       plannedPoints: string[];
-//       completedPoints: string[];
-//       expectedOutcome: string;
-//   };
-// }
-
-// export interface StoryContext {
-//   roomId: string;
-//   topic: string;
-//   recentMessages: string;
-//   characters: string[];
-// }
-
-// export interface StoryDirective {
-//   shouldIntervene: boolean;
-//   nextPhase?: StoryPhase;
-//   suggestedAction?: string;
-//   characterPrompts?: Record<string, string>;  // character -> prompt
-// }
-
-// export const PHASE_DURATIONS = {
-//   [StoryPhase.INTRO]: 60_000,      // 1 min
-//   [StoryPhase.DEVELOPMENT]: 120_000, // 2 mins
-//   [StoryPhase.CLIMAX]: 90_000,      // 1.5 mins
-//   [StoryPhase.RESOLUTION]: 30_000    // 0.5 mins
-// };
-
-// Keep ChatMessage, ChatRoom, ModelInfo as is - they're well structured
-
 // Simplify phases to match our earlier discussion
 export enum StoryPhase {
   SETUP = 'setup',
