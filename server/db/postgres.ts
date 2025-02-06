@@ -482,7 +482,10 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async getStoryPlot(roomId: string): Promise<StoryPlot | null> {
     const { rows: [plot] } = await this.pool!.query(
-      `SELECT * FROM story_plots WHERE room_id = $1`,
+      `SELECT * FROM story_plots 
+       WHERE room_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
       [roomId]
     );
 

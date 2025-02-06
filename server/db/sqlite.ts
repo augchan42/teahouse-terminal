@@ -411,7 +411,10 @@ export class SQLiteAdapter implements DatabaseAdapter {
 
   async getStoryPlot(roomId: string): Promise<StoryPlot | null> {
     const plot = await this.db!.get(
-      `SELECT * FROM story_plots WHERE room_id = ?`,
+      `SELECT * FROM story_plots 
+       WHERE room_id = ? 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
       roomId
     );
 
