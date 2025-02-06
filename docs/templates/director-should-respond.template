@@ -1,0 +1,18 @@
+# Director Evaluation
+Current Room: {{roomName}}
+Room Topic: {{roomTopic}}
+
+Story State:
+- Phase: {{storyPhase}}
+- Progress: {{phaseProgress}}
+
+Recent Activity:
+{{recentMessages}}
+
+Evaluate if director intervention is needed:
+1. Is conversation stalling?
+2. Are characters staying on topic?
+3. Is participation balanced?
+4. Is narrative progressing?
+
+Decide: [RESPOND] to guide conversation, [IGNORE] if flowing naturally, [STOP] if complete.

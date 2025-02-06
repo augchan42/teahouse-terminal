@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 const PROTECTED_PATHS = [
   '/api/rooms/[roomId]/message',
   '/api/rooms/[roomId]/topic',  // Add this for topic updates
+  '/api/rooms/[roomId]/story',
   '/api/rooms'
 ]
 

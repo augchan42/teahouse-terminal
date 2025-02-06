@@ -8,6 +8,7 @@ import { initializeStore } from "./store";
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import roomsRouter from './api/rooms';
+import storyRouter from './api/story';  // Add this import
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;

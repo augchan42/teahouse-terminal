@@ -15,6 +15,11 @@ export async function createAdapter(options = { autoMigrate: false }): Promise<D
   console.log(`Initializing ${process.env.DATABASE_TYPE || 'sqlite'} adapter`);
   await adapter.initialize();
   
+  if (options.autoMigrate) {
+    console.log('Running migrations...');
+    await runMigrations(adapter.getDatabase());
+  }
+  
   return adapter;
 }
 

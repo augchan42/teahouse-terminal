@@ -1,4 +1,4 @@
-import { ChatRoom, ChatMessage, ModelInfo } from '../types';
+import { ChatRoom, ChatMessage, ModelInfo, StoryState, StoryPhase, StoryPlot } from '../types';
 import { Database } from 'sqlite';
 import { Pool } from 'pg';
 
@@ -24,4 +24,21 @@ export interface DatabaseAdapter {
   // Initialize/cleanup
   initialize(): Promise<void>;
   close(): Promise<void>;
+  
+  // Story State operations
+  createStoryState(roomId: string, state: StoryState): Promise<void>;
+  getStoryState(roomId: string): Promise<StoryState | null>;
+  updateStoryState(roomId: string, updates: Partial<StoryState>): Promise<void>;
+  
+  // Story Events operations
+  addStoryEvent(roomId: string, event: {
+    phase: StoryPhase;
+    type: 'phase_change' | 'point_discussed' | 'character_update';
+    data: Record<string, any>;
+  }): Promise<void>;
+  getStoryEvents(roomId: string, limit?: number): Promise<any[]>;
+
+  createStoryPlot(plot: Omit<StoryPlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryPlot>;
+  getStoryPlot(roomId: string): Promise<StoryPlot | null>;
+  updateStoryPlot(roomId: string, updates: Partial<StoryPlot>): Promise<void>;
 } 

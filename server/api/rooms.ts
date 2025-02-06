@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic } from '../store';
 import { ChatRoom, ChatMessage } from '../types';
+import storyRouter from './story';  // Import the story router
 
 const router = Router();
 
@@ -95,5 +96,7 @@ router.patch('/:roomId/topic', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update room topic' });
   }
 });
+
+router.use('/:roomId/story', storyRouter);
 
 export default router; 

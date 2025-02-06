@@ -1,0 +1,20 @@
+# Director Task
+Current Room: {{roomName}}
+Room Topic: {{roomTopic}}
+
+Story State:
+- Phase: {{storyPhase}}
+- Progress: {{phaseProgress}}
+- Participation: {{characterParticipation}}
+
+Recent conversation:
+{{recentMessages}}
+
+# Objective:
+1. Monitor conversation flow
+2. Guide topic progression
+3. Ensure balanced participation
+4. Prevent repetition and loops
+
+Provide guidance or intervention if needed:
+{{formattedConversation}}
