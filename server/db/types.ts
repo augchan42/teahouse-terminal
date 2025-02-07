@@ -1,4 +1,5 @@
-import { ChatRoom, ChatMessage, ModelInfo, StoryState, StoryPhase, StoryPlot } from '../types';
+import { ChatRoom, ChatMessage, ModelInfo} from '../types';
+import { StoryPlot, StoryPhase, StoryState }from './story/types';
 import { Database } from 'sqlite';
 import { Pool } from 'pg';
 

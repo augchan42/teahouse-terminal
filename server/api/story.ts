@@ -1,5 +1,7 @@
 import { Router, Request as ExpressRequest } from 'express';
-import { createStoryState, getStoryState, updateStoryState, addStoryEvent, getStoryEvents, createStoryPlot, getStoryPlot, updateStoryPlot } from '../store';
+import { createStoryState, getStoryState, updateStoryState, addStoryEvent, 
+  getStoryEvents, createStoryPlot, getStoryPlot, updateStoryPlot } 
+  from '../db/story/store';
 
 const router = Router({ mergeParams: true }); 
 

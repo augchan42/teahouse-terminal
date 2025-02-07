@@ -1,5 +1,5 @@
 import { DatabaseAdapter, createAdapter } from './db';
-import { ChatRoom, ChatMessage, ModelInfo, StoryState, StoryPhase, StoryPlot } from './types';
+import { ChatRoom, ChatMessage, ModelInfo } from './types';
 
 let db: DatabaseAdapter | null = null;
 
@@ -122,79 +122,6 @@ export async function clearRoomMessages(roomId: string): Promise<void> {
 export async function updateRoomTopic(roomId: string, topic: string) {
   const database = await getDb();
   return database.updateRoom(roomId, { topic });
-}
-
-// Story State operations
-export async function createStoryState(roomId: string, state: StoryState): Promise<void> {
-  const database = await getDb();
-  await database.createStoryState(roomId, state);
-}
-
-export async function getStoryState(roomId: string): Promise<StoryState | null> {
-  const database = await getDb();
-  return database.getStoryState(roomId);
-}
-
-export async function updateStoryState(roomId: string, updates: Partial<StoryState>): Promise<void> {
-  const database = await getDb();
-  await database.updateStoryState(roomId, updates);
-}
-
-// Story Events operations
-export async function addStoryEvent(roomId: string, event: {
-  phase: StoryPhase;
-  type: 'phase_change' | 'point_discussed' | 'character_update';
-  data: Record<string, any>;
-}): Promise<void> {
-  const database = await getDb();
-  await database.addStoryEvent(roomId, event);
-}
-
-export async function getStoryEvents(roomId: string, limit?: number): Promise<any[]> {
-  const database = await getDb();
-  return database.getStoryEvents(roomId, limit);
-}
-
-// Story Plot operations
-export async function createStoryPlot(plot: Omit<StoryPlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryPlot> {
-  const database = await getDb();
-  return database.createStoryPlot(plot);
-}
-
-export async function getStoryPlot(roomId: string): Promise<StoryPlot | null> {
-  const database = await getDb();
-  return database.getStoryPlot(roomId);
-}
-
-export async function updateStoryPlot(roomId: string, updates: Partial<StoryPlot>): Promise<void> {
-  const database = await getDb();
-  await database.updateStoryPlot(roomId, updates);
-}
-
-// Helper function to initialize story for a room
-export async function initializeStoryForRoom(roomId: string, topic: string): Promise<void> {
-  const initialState: StoryState = {
-    currentPhase: StoryPhase.SETUP,
-    progress: 'beginning',
-    tension: 'low',
-    characterStates: {},
-    completedBeats: [],
-    topic,
-    coveredPoints: []
-  };
-
-  await createStoryState(roomId, initialState);
-}
-
-export async function getRoomParticipants(roomId: string): Promise<string[]> {
-  const database = await getDb();
-  const room = await database.getRoom(roomId);
-  
-  if (!room) return [];
-  
-  return room.participants
-    .filter(p => !p.username.includes('director') && !p.username.includes('system'))
-    .map(p => p.username);
 }
 
 // Export db for direct access if needed

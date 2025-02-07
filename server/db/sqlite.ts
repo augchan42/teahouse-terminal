@@ -1,12 +1,14 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import { DatabaseAdapter } from './types';
-import { ChatRoom, ChatMessage, ModelInfo, StoryState, StoryPhase, StoryPlot } from '../types';
-import path from 'path';
-import { runMigrations } from './migrations';
+import { ChatRoom, ChatMessage, ModelInfo } from '../types';
+import { StoryState, StoryPhase, StoryPlot } from './story/types';
+import { SqliteStoryAdapter } from './story/story-sqlite-adapter';
+import { SQLITE_STORY_SCHEMA } from './story/story-schema-sqlite';
 
 export class SQLiteAdapter implements DatabaseAdapter {
   private db: Database | null = null;
+  private storyAdapter: SqliteStoryAdapter | null = null;
   
   getDatabase() {
     return this.db!;
@@ -90,6 +92,12 @@ export class SQLiteAdapter implements DatabaseAdapter {
       CREATE INDEX IF NOT EXISTS idx_story_plots_room_id ON story_plots(room_id);
       CREATE INDEX IF NOT EXISTS idx_story_plots_created_at ON story_plots(created_at);
     `);
+
+    // Initialize story tables
+    await this.db.exec(SQLITE_STORY_SCHEMA);
+    
+    // Initialize story adapter
+    this.storyAdapter = new SqliteStoryAdapter(this.db);
   }
   
   async createRoom(room: Omit<ChatRoom, 'id'>): Promise<ChatRoom> {
@@ -271,91 +279,31 @@ export class SQLiteAdapter implements DatabaseAdapter {
 
   async close(): Promise<void> {
     await this.db?.close();
-  }
+  }  
 
+  // Story-related methods delegated to storyAdapter
   async createStoryState(roomId: string, state: StoryState): Promise<void> {
-    await this.db!.run(
-      `INSERT INTO story_states (
-        room_id, current_phase, progress, tension,
-        character_states, completed_beats, current_beat,
-        topic, covered_points
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      roomId,
-      state.currentPhase,
-      state.progress,
-      state.tension,
-      JSON.stringify(state.characterStates),
-      JSON.stringify(state.completedBeats),
-      state.currentBeat,
-      state.topic,
-      JSON.stringify(state.coveredPoints)
-    );
+    return this.storyAdapter!.createStoryState(roomId, state);
   }
 
   async getStoryState(roomId: string): Promise<StoryState | null> {
-    const state = await this.db!.get(
-      `SELECT * FROM story_states WHERE room_id = ?`,
-      roomId
-    );
-    
-    if (!state) return null;
-    
-    return {
-      currentPhase: state.current_phase,
-      progress: state.progress,
-      tension: state.tension,
-      characterStates: JSON.parse(state.character_states),
-      completedBeats: JSON.parse(state.completed_beats),
-      currentBeat: state.current_beat,
-      topic: state.topic,
-      coveredPoints: JSON.parse(state.covered_points)
-    };
+    return this.storyAdapter!.getStoryState(roomId);
   }
 
   async updateStoryState(roomId: string, updates: Partial<StoryState>): Promise<void> {
-    const sets: string[] = [];
-    const values: any[] = [];
-    
-    if (updates.currentPhase) {
-      sets.push('current_phase = ?');
-      values.push(updates.currentPhase);
-    }
-    if (updates.progress) {
-      sets.push('progress = ?');
-      values.push(updates.progress);
-    }
-    if (updates.tension) {
-      sets.push('tension = ?');
-      values.push(updates.tension);
-    }
-    if (updates.characterStates) {
-      sets.push('character_states = ?');
-      values.push(JSON.stringify(updates.characterStates));
-    }
-    if (updates.completedBeats) {
-      sets.push('completed_beats = ?');
-      values.push(JSON.stringify(updates.completedBeats));
-    }
-    if (updates.currentBeat) {
-      sets.push('current_beat = ?');
-      values.push(updates.currentBeat);
-    }
-    if (updates.topic) {
-      sets.push('topic = ?');
-      values.push(updates.topic);
-    }
-    if (updates.coveredPoints) {
-      sets.push('covered_points = ?');
-      values.push(JSON.stringify(updates.coveredPoints));
-    }
+    return this.storyAdapter!.updateStoryState(roomId, updates);
+  }
 
-    if (sets.length > 0) {
-      values.push(roomId);
-      await this.db!.run(
-        `UPDATE story_states SET ${sets.join(', ')} WHERE room_id = ?`,
-        ...values
-      );
-    }
+  async createStoryPlot(plot: Omit<StoryPlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryPlot> {
+    return this.storyAdapter!.createStoryPlot(plot);
+  }
+
+  async getStoryPlot(roomId: string): Promise<StoryPlot | null> {
+    return this.storyAdapter!.getStoryPlot(roomId);
+  }
+
+  async updateStoryPlot(roomId: string, updates: Partial<StoryPlot>): Promise<void> {
+    return this.storyAdapter!.updateStoryPlot(roomId, updates);
   }
 
   async addStoryEvent(roomId: string, event: {
@@ -363,115 +311,10 @@ export class SQLiteAdapter implements DatabaseAdapter {
     type: 'phase_change' | 'point_discussed' | 'character_update';
     data: Record<string, any>;
   }): Promise<void> {
-    await this.db!.run(
-      `INSERT INTO story_events (room_id, phase, event_type, event_data)
-       VALUES (?, ?, ?, ?)`,
-      roomId,
-      event.phase,
-      event.type,
-      JSON.stringify(event.data)
-    );
+    return this.storyAdapter!.addStoryEvent(roomId, event);
   }
 
   async getStoryEvents(roomId: string, limit = 50): Promise<any[]> {
-    return this.db!.all(
-      `SELECT * FROM story_events 
-       WHERE room_id = ? 
-       ORDER BY created_at DESC 
-       LIMIT ?`,
-      roomId,
-      limit
-    );
-  }
-
-  // Add to SQLiteAdapter
-  async createStoryPlot(plot: Omit<StoryPlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryPlot> {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    await this.db!.run(
-      `INSERT INTO story_plots (
-        id, room_id, title, premise, key_points, character_arcs,
-        scene_sequence, expected_outcomes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id,
-      plot.roomId,
-      plot.title,
-      plot.premise,
-      JSON.stringify(plot.keyPoints),
-      JSON.stringify(plot.characterArcs),
-      JSON.stringify(plot.sceneSequence),
-      JSON.stringify(plot.expectedOutcomes),
-      now,
-      now
-    );
-
-    return this.getStoryPlot(plot.roomId) as Promise<StoryPlot>;
-  }
-
-  async getStoryPlot(roomId: string): Promise<StoryPlot | null> {
-    const plot = await this.db!.get(
-      `SELECT * FROM story_plots 
-       WHERE room_id = ? 
-       ORDER BY created_at DESC 
-       LIMIT 1`,
-      roomId
-    );
-
-    if (!plot) return null;
-
-    return {
-      id: plot.id,
-      roomId: plot.room_id,
-      title: plot.title,
-      premise: plot.premise,
-      keyPoints: JSON.parse(plot.key_points),
-      characterArcs: JSON.parse(plot.character_arcs),
-      sceneSequence: JSON.parse(plot.scene_sequence),
-      expectedOutcomes: JSON.parse(plot.expected_outcomes),
-      createdAt: plot.created_at,
-      updatedAt: plot.updated_at
-    };
-  }
-
-  async updateStoryPlot(roomId: string, updates: Partial<StoryPlot>): Promise<void> {
-    const sets: string[] = [];
-    const values: any[] = [];
-
-    if (updates.title) {
-      sets.push('title = ?');
-      values.push(updates.title);
-    }
-    if (updates.premise) {
-      sets.push('premise = ?');
-      values.push(updates.premise);
-    }
-    if (updates.keyPoints) {
-      sets.push('key_points = ?');
-      values.push(JSON.stringify(updates.keyPoints));
-    }
-    if (updates.characterArcs) {
-      sets.push('character_arcs = ?');
-      values.push(JSON.stringify(updates.characterArcs));
-    }
-    if (updates.sceneSequence) {
-      sets.push('scene_sequence = ?');
-      values.push(JSON.stringify(updates.sceneSequence));
-    }
-    if (updates.expectedOutcomes) {
-      sets.push('expected_outcomes = ?');
-      values.push(JSON.stringify(updates.expectedOutcomes));
-    }
-
-    if (sets.length > 0) {
-      sets.push('updated_at = ?');
-      values.push(new Date().toISOString());
-      
-      values.push(roomId);
-      await this.db!.run(
-        `UPDATE story_plots SET ${sets.join(', ')} WHERE room_id = ?`,
-        ...values
-      );
-    }
+    return this.storyAdapter!.getStoryEvents(roomId, limit);
   }
 } 

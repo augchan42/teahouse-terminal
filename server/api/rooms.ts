@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic, getRoomParticipants, addParticipant } from '../store';
-import { ChatRoom, ChatMessage, ModelInfo } from '../types';
+import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic, addParticipant } from '../store';
+import { getRoomParticipants } from '../db/story/store';
+import { ModelInfo } from '../types';
 import storyRouter from './story';  // Import the story router
 
 const router = Router();

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { getRoomParticipants } from "@/server/store";
+import { getRoomParticipants } from "@/server/db/story/store";
 
 export async function GET(
   request: NextRequest,

@@ -1,10 +1,14 @@
 import { Pool, PoolClient } from 'pg';
 import { DatabaseAdapter } from './types';
-import { ChatRoom, ChatMessage, ModelInfo, StoryState, StoryPhase, StoryPlot } from '../types';
+import { ChatRoom, ChatMessage, ModelInfo } from '../types';
+import { StoryState, StoryPhase, StoryPlot } from './story/types';
+import { PostgresStoryAdapter } from './story/story-pg-adapter';
+import { POSTGRES_STORY_SCHEMA } from './story/story-schema-pg';
 
 export class PostgresAdapter implements DatabaseAdapter {
   private pool: Pool | null = null;
-  
+  private storyAdapter: PostgresStoryAdapter | null = null;
+
   getDatabase() {
     return this.pool!;
   }
@@ -22,7 +26,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         topic TEXT,
         tags JSONB,
         created_at TIMESTAMP WITH TIME ZONE,
-        message_count INTEGER DEFAULT 0
+        message_count INTEGER DEFAULT 0,
+        display_order INTEGER DEFAULT 0
       );
       
       CREATE TABLE IF NOT EXISTS messages (
@@ -31,7 +36,9 @@ export class PostgresAdapter implements DatabaseAdapter {
         content TEXT,
         sender_username TEXT,
         sender_model TEXT,
-        timestamp TIMESTAMP WITH TIME ZONE
+        timestamp TIMESTAMP WITH TIME ZONE,
+        content_type TEXT DEFAULT 'text',
+        metadata JSONB
       );
       
       CREATE TABLE IF NOT EXISTS participants (
@@ -39,51 +46,12 @@ export class PostgresAdapter implements DatabaseAdapter {
         username TEXT,
         model TEXT,
         PRIMARY KEY(room_id, username)
-      );
-
-      CREATE TABLE IF NOT EXISTS story_states (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
-        current_phase TEXT NOT NULL,
-        progress TEXT NOT NULL,
-        tension TEXT NOT NULL,
-        character_states JSONB NOT NULL DEFAULT '{}',
-        completed_beats JSONB NOT NULL DEFAULT '[]',
-        current_beat TEXT,
-        topic TEXT NOT NULL,
-        covered_points JSONB NOT NULL DEFAULT '[]',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS story_events (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
-        phase TEXT NOT NULL,
-        event_type TEXT NOT NULL,
-        event_data JSONB NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );      
-
-      CREATE INDEX IF NOT EXISTS idx_story_states_room_id ON story_states(room_id);
-      CREATE INDEX IF NOT EXISTS idx_story_events_room_id ON story_events(room_id);
-
-      CREATE TABLE IF NOT EXISTS story_plots (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        premise TEXT NOT NULL,
-        key_points JSONB NOT NULL DEFAULT '[]',
-        character_arcs JSONB NOT NULL DEFAULT '{}',
-        scene_sequence JSONB NOT NULL DEFAULT '[]',
-        expected_outcomes JSONB NOT NULL DEFAULT '[]',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_story_plots_room_id ON story_plots(room_id);
-      CREATE INDEX IF NOT EXISTS idx_story_plots_created_at ON story_plots(created_at);
     `);
+
+    await this.pool.query(POSTGRES_STORY_SCHEMA);
+    // Initialize story adapter
+    this.storyAdapter = new PostgresStoryAdapter(this.pool);
   }
   
   async createRoom(room: Omit<ChatRoom, 'id'>): Promise<ChatRoom> {
@@ -329,226 +297,44 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.pool?.end();
   }
 
+  // Delegate all story methods to storyAdapter
   async createStoryState(roomId: string, state: StoryState): Promise<void> {
-    await this.pool!.query(
-      `INSERT INTO story_states (
-        room_id, current_phase, progress, tension,
-        character_states, completed_beats, current_beat,
-        topic, covered_points
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        roomId,
-        state.currentPhase,
-        state.progress,
-        state.tension,
-        JSON.stringify(state.characterStates),
-        JSON.stringify(state.completedBeats),
-        state.currentBeat,
-        state.topic,
-        JSON.stringify(state.coveredPoints)
-      ]
-    );
+    return this.storyAdapter!.createStoryState(roomId, state);
   }
 
   async getStoryState(roomId: string): Promise<StoryState | null> {
-    const { rows: [state] } = await this.pool!.query(
-      `SELECT * FROM story_states WHERE room_id = $1`,
-      [roomId]
-    );
-    
-    if (!state) return null;
-    
-    return {
-      currentPhase: state.current_phase,
-      progress: state.progress,
-      tension: state.tension,
-      characterStates: state.character_states,
-      completedBeats: state.completed_beats,
-      currentBeat: state.current_beat,
-      topic: state.topic,
-      coveredPoints: state.covered_points
-    };
+    return this.storyAdapter!.getStoryState(roomId);
   }
 
   async updateStoryState(roomId: string, updates: Partial<StoryState>): Promise<void> {
-    const sets: string[] = [];
-    const values: any[] = [roomId];
-    let paramCount = 2;
-
-    if (updates.currentPhase) {
-      sets.push(`current_phase = $${paramCount}`);
-      values.push(updates.currentPhase);
-      paramCount++;
-    }
-    if (updates.progress) {
-      sets.push(`progress = $${paramCount}`);
-      values.push(updates.progress);
-      paramCount++;
-    }
-    if (updates.tension) {
-      sets.push(`tension = $${paramCount}`);
-      values.push(updates.tension);
-      paramCount++;
-    }
-    if (updates.characterStates) {
-      sets.push(`character_states = $${paramCount}`);
-      values.push(JSON.stringify(updates.characterStates));
-      paramCount++;
-    }
-    if (updates.completedBeats) {
-      sets.push(`completed_beats = $${paramCount}`);
-      values.push(JSON.stringify(updates.completedBeats));
-      paramCount++;
-    }
-    if (updates.currentBeat) {
-      sets.push(`current_beat = $${paramCount}`);
-      values.push(updates.currentBeat);
-      paramCount++;
-    }
-    if (updates.topic) {
-      sets.push(`topic = $${paramCount}`);
-      values.push(updates.topic);
-      paramCount++;
-    }
-    if (updates.coveredPoints) {
-      sets.push(`covered_points = $${paramCount}`);
-      values.push(JSON.stringify(updates.coveredPoints));
-      paramCount++;
-    }
-
-    if (sets.length > 0) {
-      await this.pool!.query(
-        `UPDATE story_states SET ${sets.join(', ')} WHERE room_id = $1`,
-        values
-      );
-    }
+    return this.storyAdapter!.updateStoryState(roomId, updates);
   }
 
-  async addStoryEvent(roomId: string, event: {
-    phase: StoryPhase;
-    type: 'phase_change' | 'point_discussed' | 'character_update';
-    data: Record<string, any>;
-  }): Promise<void> {
-    await this.pool!.query(
-      `INSERT INTO story_events (room_id, phase, event_type, event_data)
-       VALUES ($1, $2, $3, $4)`,
-      [roomId, event.phase, event.type, JSON.stringify(event.data)]
-    );
-  }
-
-  async getStoryEvents(roomId: string, limit = 50): Promise<any[]> {
-    const { rows } = await this.pool!.query(
-      `SELECT * FROM story_events 
-       WHERE room_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT $2`,
-      [roomId, limit]
-    );
-    return rows;
-  }
-
-  // Add to PostgresAdapter
   async createStoryPlot(plot: Omit<StoryPlot, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryPlot> {
-    const { rows: [created] } = await this.pool!.query(
-      `INSERT INTO story_plots (
-        room_id, title, premise, key_points, character_arcs,
-        scene_sequence, expected_outcomes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *`,
-      [
-        plot.roomId,
-        plot.title,
-        plot.premise,
-        JSON.stringify(plot.keyPoints),
-        JSON.stringify(plot.characterArcs),
-        JSON.stringify(plot.sceneSequence),
-        JSON.stringify(plot.expectedOutcomes)
-      ]
-    );
-
-    return {
-      id: created.id,
-      roomId: created.room_id,
-      title: created.title,
-      premise: created.premise,
-      keyPoints: created.key_points,
-      characterArcs: created.character_arcs,
-      sceneSequence: created.scene_sequence,
-      expectedOutcomes: created.expected_outcomes,
-      createdAt: created.created_at,
-      updatedAt: created.updated_at
-    };
+    return this.storyAdapter!.createStoryPlot(plot);
   }
 
   async getStoryPlot(roomId: string): Promise<StoryPlot | null> {
-    const { rows: [plot] } = await this.pool!.query(
-      `SELECT * FROM story_plots 
-       WHERE room_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT 1`,
-      [roomId]
-    );
-
-    if (!plot) return null;
-
-    return {
-      id: plot.id,
-      roomId: plot.room_id,
-      title: plot.title,
-      premise: plot.premise,
-      keyPoints: plot.key_points,
-      characterArcs: plot.character_arcs,
-      sceneSequence: plot.scene_sequence,
-      expectedOutcomes: plot.expected_outcomes,
-      createdAt: plot.created_at,
-      updatedAt: plot.updated_at
-    };
+    return this.storyAdapter!.getStoryPlot(roomId);
   }
 
   async updateStoryPlot(roomId: string, updates: Partial<StoryPlot>): Promise<void> {
-    const sets: string[] = [];
-    const values: any[] = [roomId];
-    let paramCount = 2;
-
-    if (updates.title) {
-      sets.push(`title = $${paramCount}`);
-      values.push(updates.title);
-      paramCount++;
-    }
-    if (updates.premise) {
-      sets.push(`premise = $${paramCount}`);
-      values.push(updates.premise);
-      paramCount++;
-    }
-    if (updates.keyPoints) {
-      sets.push(`key_points = $${paramCount}`);
-      values.push(JSON.stringify(updates.keyPoints));
-      paramCount++;
-    }
-    if (updates.characterArcs) {
-      sets.push(`character_arcs = $${paramCount}`);
-      values.push(JSON.stringify(updates.characterArcs));
-      paramCount++;
-    }
-    if (updates.sceneSequence) {
-      sets.push(`scene_sequence = $${paramCount}`);
-      values.push(JSON.stringify(updates.sceneSequence));
-      paramCount++;
-    }
-    if (updates.expectedOutcomes) {
-      sets.push(`expected_outcomes = $${paramCount}`);
-      values.push(JSON.stringify(updates.expectedOutcomes));
-      paramCount++;
-    }
-
-    if (sets.length > 0) {
-      sets.push(`updated_at = $${paramCount}`);
-      values.push(new Date().toISOString());
-
-      await this.pool!.query(
-        `UPDATE story_plots SET ${sets.join(', ')} WHERE room_id = $1`,
-        values
-      );
-    }
+    return this.storyAdapter!.updateStoryPlot(roomId, updates);
   }
+
+  async addStoryEvent(
+    roomId: string,
+    event: { 
+      phase: StoryPhase; 
+      type: "phase_change" | "point_discussed" | "character_update"; 
+      data: Record<string, any>; 
+    }
+  ): Promise<void> {
+    await this.storyAdapter!.addStoryEvent(roomId, event);
+  }
+
+  async getStoryEvents(roomId: string, limit = 50): Promise<any[]> {
+    return this.storyAdapter!.getStoryEvents(roomId, limit);
+  }
+
 } 

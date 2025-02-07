@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
-import { createStoryPlot, getStoryPlot, updateStoryPlot } from "@/server/store";
-import { StoryPlot } from "@/server/types";
+import { createStoryPlot, getStoryPlot, updateStoryPlot } from "@/server/db/story/store";
+import { StoryPlot } from "@/server/db/story/types";
 
 export async function GET(
   request: NextRequest,

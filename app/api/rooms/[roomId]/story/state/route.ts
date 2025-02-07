@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
-import { createStoryState, getStoryState, updateStoryState } from "@/server/store";
-import { StoryState } from "@/server/types";
+import { createStoryState, getStoryState, updateStoryState } from "@/server/db/story/store";
+import { StoryState } from "@/server/db/story/types";
 
 export async function GET(
   request: NextRequest,
