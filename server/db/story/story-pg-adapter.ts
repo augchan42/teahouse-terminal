@@ -7,14 +7,15 @@ export class PostgresStoryAdapter {
   async createStoryState(roomId: string, state: StoryState): Promise<void> {
     await this.pool.query(
       `INSERT INTO story_states (
-        room_id, current_scene, progress, character_states, covered_points
-      ) VALUES ($1, $2, $3, $4, $5)`,
+        room_id, current_scene, progress, character_states, covered_points, template
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         roomId,
         state.currentScene,
         state.progress,
         JSON.stringify(state.characterStates),
-        JSON.stringify(state.coveredPoints)
+        JSON.stringify(state.coveredPoints),
+        state.template
       ]
     );
   }
