@@ -108,6 +108,15 @@ export interface SceneEvaluation {
   suggestedAction?: StoryDirective;
 }
 
+export interface StoryScene {
+  description: string;
+  completionCriteria: string;
+  characterGoals: Record<string, string>;
+  phase: StoryPhase;
+  beatKey: StoryBeatKey;
+  tensionLevel: TensionLevel;
+}
+
 export interface StoryPlot {
   id: string;
   roomId: string;
@@ -122,11 +131,7 @@ export interface StoryPlot {
           relationships: Record<string, Relationship>;
       }
   >;
-  scenes: Array<{
-      description: string;
-      completionCriteria: string;
-      characterGoals: Record<string, string>;
-  }>;
+  scenes: Record<Scene, StoryScene>; // Changed from Array to Record
   expectedOutcomes: Array<{
       character: string;
       outcome: string;
