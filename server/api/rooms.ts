@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic, getRoomParticipants } from '../store';
+import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic, getRoomParticipants, addParticipant } from '../store';
 import { ChatRoom, ChatMessage } from '../types';
 import storyRouter from './story';  // Import the story router
 
@@ -106,6 +106,20 @@ router.get('/:roomId/participants', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error getting room participants:', error);
     res.status(500).json({ error: 'Failed to get room participants' });
+  }
+});
+
+// Join room
+router.post('/:roomId/join', async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.params;
+    const { modelInfo } = req.body;
+    
+    await addParticipant(roomId, modelInfo);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error joining room:', error);
+    res.status(500).json({ error: 'Failed to join room' });
   }
 });
 
