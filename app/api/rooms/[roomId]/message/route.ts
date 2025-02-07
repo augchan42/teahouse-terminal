@@ -6,7 +6,7 @@ export async function POST(
   request: Request,
   { params }: { params: { roomId: string } }
 ) {
-  const roomId = params.roomId;
+  const roomId = params.roomId.toLowerCase().replace("#", "");
   if (!roomId) {
     return NextResponse.json(
       { error: "Room ID is required" },

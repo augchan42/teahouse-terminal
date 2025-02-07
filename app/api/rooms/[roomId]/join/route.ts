@@ -6,9 +6,10 @@ export async function POST(
   request: Request,
   { params }: { params: { roomId: string } }
 ) {
+  const roomId = params.roomId.toLowerCase().replace("#", "");
   try {
     const { modelInfo } = await request.json() as { modelInfo: ModelInfo };
-    await addParticipant(params.roomId, modelInfo);
+    await addParticipant(roomId, modelInfo);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to join room" }, { status: 500 });

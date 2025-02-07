@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createRoom, listRooms, getRoomMessages, clearRoomMessages, addMessageToRoom, updateRoomTopic, getRoomParticipants, addParticipant } from '../store';
-import { ChatRoom, ChatMessage } from '../types';
+import { ChatRoom, ChatMessage, ModelInfo } from '../types';
 import storyRouter from './story';  // Import the story router
 
 const router = Router();
@@ -110,7 +110,7 @@ router.get('/:roomId/participants', async (req: Request, res: Response) => {
 });
 
 // Join room
-router.post('/:roomId/join', async (req: Request, res: Response) => {
+router.post('/:roomId/join', async (req: Request<{ roomId: string }, any, { modelInfo: ModelInfo }>, res: Response) => {
   try {
     const { roomId } = req.params;
     const { modelInfo } = req.body;
@@ -119,7 +119,11 @@ router.post('/:roomId/join', async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error joining room:', error);
-    res.status(500).json({ error: 'Failed to join room' });
+    res.status(500).json({ 
+      error: 'Failed to join room',
+      details: error instanceof Error ? error.message : String(error),
+      code: error instanceof Error && 'code' in error ? (error as any).code : undefined
+    });
   }
 });
 
